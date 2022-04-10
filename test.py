@@ -9,7 +9,7 @@ from threading import Thread
 # Библиотека для реализации многопоточной обработки
 
 needpercent = 65.0
-
+#test2
 # Создание класса WebcamStream для реализации многопоточной обработки
 class WebcamStream:
     def __init__(self, stream_id=0):
