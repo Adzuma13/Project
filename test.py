@@ -7,7 +7,7 @@ import pickle
 import numpy as np
 from threading import Thread
 # Библиотека для реализации многопоточной обработки
-
+#testestestestestest
 needpercent = 65.0
 
 # Создание класса WebcamStream для реализации многопоточной обработки
