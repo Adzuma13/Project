@@ -8,7 +8,7 @@ import numpy as np
 from threading import Thread
 # Библиотека для реализации многопоточной обработки
 
-
+needpercent = 65.0
 
 # Создание класса WebcamStream для реализации многопоточной обработки
 class WebcamStream:
@@ -109,6 +109,7 @@ class WebcamStream:
 '''
             #if sumrec != sumfaces-sumunrec:
             if True:
+                ifAnotherPerson = []
                 for i in range(len(self.t.images)):
                     k=0
                     for j in range(len(self.t.face_enc_recogned)):
@@ -136,19 +137,26 @@ class WebcamStream:
                     right_bottom = (face_location[1], face_location[2])
                     color = [0, 255, 0]
                     cv2.rectangle(frame, left_top, right_bottom, color, 4)
-
-                    left_bottom = (face_location[3], face_location[2])
-                    right_bottom = (face_location[1], face_location[2] + 20)
-                    # cv2.rectangle(image, left_bottom, right_bottom, color, cv2.FILLED)
-                    if (match != None):
-                        print(match,2)
-                    else:
-                        sumunrec += 1
-                    cv2.putText(frame, match, (face_location[3] + 18, face_location[2] + 24), cv2.FONT_HERSHEY_SIMPLEX, 1,
+                    ifAnotherPerson.append(accuracy)
+                    if accuracy>needpercent:
+                        if (match != None):
+                            print(match,2)
+                        else:
+                            sumunrec += 1
+                        '''left_bottom = (face_location[3] + 18, face_location[2] + 24)
+                        right_bottom = (face_location[1], face_location[2])
+                        cv2.rectangle(frame, left_bottom, right_bottom, color, cv2.FILLED)'''
+                        cv2.putText(frame, match, (face_location[3] + 18, face_location[2] + 24), cv2.FONT_HERSHEY_SIMPLEX, 1,
                                 (255, 255, 255), 4)
-                    if accuracy>40.0:
                         cv2.putText(frame, stringstring, (face_location[1]-80, face_location[0]+30), cv2.FONT_HERSHEY_SIMPLEX, 1,
                                 (255, 255, 255), 4)
+                if max(ifAnotherPerson)<needpercent:
+                    left_bottom = (face_location[3] + 18, face_location[2] + 24)
+                    right_bottom = (face_location[1], face_location[2])
+                    cv2.rectangle(frame, left_bottom, right_bottom, color, cv2.FILLED)
+                    cv2.putText(frame, "", (face_location[3] + 18, face_location[2] + 24), cv2.FONT_HERSHEY_SIMPLEX,
+                                1,(255, 255, 255), 4)
+
 
         if sumrec > 0 or sumfaces > 0:
             print(sumrec, sumfaces)

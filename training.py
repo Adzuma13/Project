@@ -103,7 +103,7 @@ def take_screenshot_from_video(name,cam):
 
 # Функция main, через которую идет запуск тренировочной модели
 def main():
-    take_screenshot_from_video("Alisher",0)
+    take_screenshot_from_video("Ruslan",0)
 
 
 if __name__ == '__main__':
