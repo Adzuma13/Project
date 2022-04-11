@@ -10,6 +10,7 @@ from threading import Thread
 
 needpercent = 65.0
 
+
 # Создание класса WebcamStream для реализации многопоточной обработки
 class WebcamStream:
     def __init__(self, stream_id=0):
@@ -22,7 +23,7 @@ class WebcamStream:
             print("[Exiting]: Error accessing webcam stream.")
             exit(0)
         fps_input_stream = int(self.vcap.get(5))
-        print("FPS of webcam hardware/input stream: {}".format(fps_input_stream))
+        #print("FPS of webcam hardware/input stream: {}".format(fps_input_stream))
 
         # чтение одного кадра из потока vcap для инициализации
         self.grabbed, self.frame = self.vcap.read()
@@ -44,6 +45,8 @@ class WebcamStream:
 
         self.t.face_enc_recogned = []
         self.t.face_enc_names = []
+        self.t.maxaccur = 0.0
+        self.t.namesfind = []
         self.t.start()
 
 
@@ -75,10 +78,12 @@ class WebcamStream:
         sumfaces = 0
         sumunrec = 0
         #print(self.t.encodings)
-
         for face_encoding, face_location in zip(self.t.encodings, self.t.locations):
+            Accuracies = []
+            Names = []
             sumfaces += 1
-            accuracy = 0.0
+            ifAnotherPerson = []
+            face_loc = face_location
             '''if len(self.t.face_enc_recogned)>0:
                 print(len(self.t.face_enc_names),"fff")
                 for i in range(len(self.t.face_enc_recogned)):
@@ -107,64 +112,70 @@ class WebcamStream:
                         cv2.putText(frame, stringstring, (face_location[1]-80, face_location[0]+30), cv2.FONT_HERSHEY_SIMPLEX, 1,
                                 (255, 255, 255), 4)
 '''
-            #if sumrec != sumfaces-sumunrec:
-            if True:
-                ifAnotherPerson = []
-                for i in range(len(self.t.images)):
-                    k=0
-                    for j in range(len(self.t.face_enc_recogned)):
-                        result1 = face_recognition.compare_faces([self.t.face_enc_recogned[j]], face_encoding)
-                        #if True in result1:
-                         #   k=1
-                    result = face_recognition.compare_faces(self.t.data[i]["encodings"], face_encoding)
-                    accur = face_recognition.face_distance(self.t.data[i]["encodings"], face_encoding)
-                    match = None
-                    #print(match)
-                    #print(result," result")
-                    #print(accuracy*100/100,self.t.data[i]["name"])
+            for i in range(len(self.t.images)):
+                '''k=0
+                for j in range(len(self.t.face_enc_recogned)):
+                    result1 = face_recognition.compare_faces([self.t.face_enc_recogned[j]], face_encoding)
+                    #if True in result1:
+                     #   k=1'''
+                result = face_recognition.compare_faces(self.t.data[i]["encodings"], face_encoding)
+                accur = face_recognition.face_distance(self.t.data[i]["encodings"], face_encoding)
+                match = None
+                #print(match)
+                #print(result," result")
+                #print(accuracy*100/100,self.t.data[i]["name"])
+                left_top = (face_location[3], face_location[0])
+                right_bottom = (face_location[1], face_location[2])
+                color = [0, 255, 0]
+                cv2.rectangle(frame, left_top, right_bottom, color, 4)
 
-                    if True in result and k!=1:
-                        accuracy = 1.0-float(min(accur))
-                        accuracy *= 100.0
-                        stringstring = toFixed(accuracy,2)+"%"
-                        match = self.t.data[i]["name"]
-                        sumrec += 1
-                        self.t.face_enc_recogned.append(face_encoding)
-                        self.t.face_enc_names.append(match)
-                        #print(len(self.t.face_enc_recogned[0]))
-                    print(accuracy)
-                    left_top = (face_location[3], face_location[0])
-                    right_bottom = (face_location[1], face_location[2])
-                    color = [0, 255, 0]
-                    cv2.rectangle(frame, left_top, right_bottom, color, 4)
+                if True in result: #and k!=1:
+                    accuracy = 1.0-float(min(accur))
+                    accuracy *= 100.0
+                    match = self.t.data[i]["name"]
+                        #sumrec += 1
+                    self.t.face_enc_recogned.append(face_encoding)
+                    self.t.face_enc_names.append(match)
+                    #print(len(self.t.face_enc_recogned[0]))
+                    #print(accuracy,match)
+
+                    Accuracies.append(accuracy)
+                    Names.append(match)
                     ifAnotherPerson.append(accuracy)
-                    if accuracy>needpercent:
-                        if (match != None):
-                            print(match,2)
-                        else:
-                            sumunrec += 1
-                        '''left_bottom = (face_location[3] + 18, face_location[2] + 24)
-                        right_bottom = (face_location[1], face_location[2])
-                        cv2.rectangle(frame, left_bottom, right_bottom, color, cv2.FILLED)'''
-                        cv2.putText(frame, match, (face_location[3] + 18, face_location[2] + 24), cv2.FONT_HERSHEY_SIMPLEX, 1,
-                                (255, 255, 255), 4)
-                        cv2.putText(frame, stringstring, (face_location[1]-80, face_location[0]+30), cv2.FONT_HERSHEY_SIMPLEX, 1,
-                                (255, 255, 255), 4)
-                if max(ifAnotherPerson)<needpercent:
-                    left_bottom = (face_location[3] + 18, face_location[2] + 24)
-                    right_bottom = (face_location[1], face_location[2])
-                    cv2.rectangle(frame, left_bottom, right_bottom, color, cv2.FILLED)
-                    cv2.putText(frame, "", (face_location[3] + 18, face_location[2] + 24), cv2.FONT_HERSHEY_SIMPLEX,
-                                1,(255, 255, 255), 4)
+            MaxAccuracy = 0.0
+            MaxID = -1
+            for i in range(len(Accuracies)):
+                if MaxAccuracy<Accuracies[i]:
+                    MaxAccuracy = Accuracies[i]
+                    MaxID = i
+            stringaccuracy = toFixed(MaxAccuracy, 2) + "%"
+            if MaxAccuracy>needpercent:
+                sumunrec += 1
+                #print(stringaccuracy,MaxID,Names,Accuracies)
+                cv2.putText(frame, Names[MaxID], (face_location[3] + 18, face_location[2] + 24), cv2.FONT_HERSHEY_SIMPLEX, 1,
+                        (255, 255, 255), 4)
+                cv2.putText(frame, stringaccuracy, (face_location[1]-80, face_location[0]+30), cv2.FONT_HERSHEY_SIMPLEX, 1,
+                        (255, 255, 255), 4)
+                if Names[MaxID] not in self.t.namesfind:
+                    self.t.namesfind.append(Names[MaxID])
+            else:
+                #for face_encoding, face_location in zip(self.t.encodings, self.t.locations):
+                if len(face_loc)==4:
+                    cv2.putText(frame, "Another Person", (face_location[3] + 18, face_location[2] + 24), cv2.FONT_HERSHEY_SIMPLEX,
+                            1,(255, 255, 255), 4)
+            #print()
+            #print()
 
-
-        if sumrec > 0 or sumfaces > 0:
-            print(sumrec, sumfaces)
+        '''if sumrec > 0 or sumfaces > 0:
+            print(sumrec, sumfaces)'''
 
     # метод возврата последнего прочитанного кадра
     def read(self):
         return self.frame
-
+    def getNamesOnVideo(self):
+        print(f"На видео были обнаружены {len(self.t.namesfind)} человек: ")
+        for i in range(len(self.t.namesfind)):
+            print(self.t.namesfind[i])
     # метод, вызываемый для прекращения чтения фреймов
     def stop(self):
         self.stopped = True
@@ -175,7 +186,6 @@ def toFixed(numObj, digits=0):
 def facesss(videoid):
     webcam_stream = WebcamStream(stream_id=videoid)  # stream_id = 0 is for primary camera
     webcam_stream.start()
-
     # обработка кадров во входном потоке
     num_frames_processed = 0
     start = time.time()
@@ -188,7 +198,7 @@ def facesss(videoid):
             src = frame
 
             # процент изменения размера изображения
-            scale_percent = 90
+            scale_percent = 150
 
             # рассчитать 50 процентов исходных размеров
             width = int(src.shape[1] * scale_percent / 100)
@@ -208,6 +218,7 @@ def facesss(videoid):
         cv2.imwrite(f"udalit_extra.jpg", output)
         key = cv2.waitKey(1)
         if key == ord('q'):
+            webcam_stream.getNamesOnVideo()
             break
     end = time.time()
     webcam_stream.stop()
@@ -217,7 +228,7 @@ def facesss(videoid):
     # вывод затраченного времени и fps
     elapsed = end - start
     fps = num_frames_processed / elapsed
-    print("FPS: {} , Elapsed Time: {} , Frames Processed: {}".format(fps, elapsed, num_frames_processed))
+    #print("FPS: {} , Elapsed Time: {} , Frames Processed: {}".format(fps, elapsed, num_frames_processed))
 
     # закрытие всех окон
     cv2.destroyAllWindows()
@@ -228,7 +239,6 @@ def facesss(videoid):
 
 def main():
     facesss(0)
-    #facesss(0)
 
     pass
 if __name__ == '__main__':
