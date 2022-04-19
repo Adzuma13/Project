@@ -47,6 +47,7 @@ class WebcamStream:
         self.t.face_enc_names = []
         self.t.maxaccur = 0.0
         self.t.namesfind = []
+        self.t.peoplefind = []
         self.t.start()
 
 
@@ -82,7 +83,7 @@ class WebcamStream:
             Accuracies = []
             Names = []
             sumfaces += 1
-            ifAnotherPerson = []
+            #ifAnotherPerson = []
             face_loc = face_location
             '''if len(self.t.face_enc_recogned)>0:
                 print(len(self.t.face_enc_names),"fff")
@@ -119,6 +120,9 @@ class WebcamStream:
                     #if True in result1:
                      #   k=1'''
                 result = face_recognition.compare_faces(self.t.data[i]["encodings"], face_encoding)
+                #print(face_encoding,i)
+                #print(type(self.t.data[i]["encodings"]), type(face_encoding))
+                #print(result, i)
                 accur = face_recognition.face_distance(self.t.data[i]["encodings"], face_encoding)
                 match = None
                 #print(match)
@@ -141,7 +145,23 @@ class WebcamStream:
 
                     Accuracies.append(accuracy)
                     Names.append(match)
-                    ifAnotherPerson.append(accuracy)
+
+                if(len(self.t.peoplefind) == 0):
+                    self.t.peoplefind.append(face_encoding)
+                    print("Added 0")
+
+                for j in range(len(self.t.peoplefind)):
+                    result1 = face_recognition.compare_faces(face_encoding, np.asarray(self.t.peoplefind))
+                    accur1 = face_recognition.face_distance(face_encoding, np.asarray(self.t.peoplefind))
+                    accuracy = 1.0-float(min(accur1))
+                    accuracy *= 100.0
+                    #print(np.asarray(self.t.peoplefind))
+                    #print(np.asarray(result1))
+                    print(result1)
+                    if(len(result1)>0):
+                        if accuracy<50:
+                            self.t.peoplefind.append(face_encoding)
+                            print("added 1")
             MaxAccuracy = 0.0
             MaxID = -1
             for i in range(len(Accuracies)):
@@ -173,9 +193,10 @@ class WebcamStream:
     def read(self):
         return self.frame
     def getNamesOnVideo(self):
-        print(f"На видео были обнаружены {len(self.t.namesfind)} человек: ")
+        print(f"На видео были распознаны {len(self.t.namesfind)} человек: ")
         for i in range(len(self.t.namesfind)):
             print(self.t.namesfind[i])
+        print(f"На видео были обнаружены {len(self.t.peoplefind)} человек")
     # метод, вызываемый для прекращения чтения фреймов
     def stop(self):
         self.stopped = True
@@ -198,7 +219,7 @@ def facesss(videoid):
             src = frame
 
             # процент изменения размера изображения
-            scale_percent = 150
+            scale_percent = 100
 
             # рассчитать 50 процентов исходных размеров
             width = int(src.shape[1] * scale_percent / 100)
@@ -218,8 +239,8 @@ def facesss(videoid):
         cv2.imwrite(f"udalit_extra.jpg", output)
         key = cv2.waitKey(1)
         if key == ord('q'):
-            webcam_stream.getNamesOnVideo()
             break
+    webcam_stream.getNamesOnVideo()
     end = time.time()
     webcam_stream.stop()
     # остановка трансляцию с веб-камеры
@@ -238,6 +259,7 @@ def facesss(videoid):
 
 
 def main():
+    #facesss("video.mp4")
     facesss(0)
 
     pass
